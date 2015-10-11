@@ -11,4 +11,6 @@ fix: *.go
 	gofmt -l -w .
 
 travis:
+	go get golang.org/x/crypto/nacl/secretbox
+	go get golang.org/x/crypto/scrypt
 	go test -v
