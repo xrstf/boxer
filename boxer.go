@@ -77,9 +77,18 @@ func NewDefaultBoxer() *Boxer {
 //
 // This function automatically stretches the password to meet the KeyLength
 // requirement, as well as calculate a fresh nonce. The function returns an
-// error if not enough data is avialable in rand.Reader, otherwise the first
-// value will be the encryption result, containing the salt and nonce.
+// error if the data/password is empty or not enough data is available in
+// rand.Reader, otherwise the first value will be the encryption result,
+// containing the salt and nonce.
 func (b *Boxer) Encrypt(data []byte, password []byte) ([]byte, error) {
+	if len(data) == 0 {
+		return nil, errors.New("Cannot encrypt zero-length data.")
+	}
+
+	if len(password) == 0 {
+		return nil, errors.New("Empty passwords are not allowed for encryption.")
+	}
+
 	// derive a new encryption key for this message
 	key, salt, err := b.DeriveKeyFromPassword(password)
 	if err != nil {
@@ -191,8 +200,12 @@ func (b *Boxer) DeriveKey(password []byte, salt *[SaltLength]byte) (*[KeyLength]
 // milliseconds and 16 random bytes. It returns an error if rand.Reader could not
 // provide enough entropy.
 func (b *Boxer) CreateNonce() (*[NonceLength]byte, error) {
+	return createNonce(time.Now())
+}
+
+func createNonce(t time.Time) (*[NonceLength]byte, error) {
 	nonce := new([NonceLength]byte)
-	now := time.Now().UnixNano()
+	now := t.UnixNano()
 
 	binary.BigEndian.PutUint64(nonce[:], uint64(now))
 
