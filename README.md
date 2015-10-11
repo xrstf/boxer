@@ -1,5 +1,6 @@
 Boxer - NaCl for Humans
 =======================
+[![Build Status](https://travis-ci.org/xrstf/boxer.svg?branch=master)](https://travis-ci.org/xrstf/boxer)
 [![GoDoc](https://godoc.org/github.com/xrstf/boxer?status.svg)](https://godoc.org/github.com/xrstf/boxer)
 
 This Go package implements a convenience wrapper around the NaCl package.
