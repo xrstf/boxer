@@ -36,14 +36,17 @@ Usage
 dataToEncrypt := "I am something to keep secret."
 password := "sup3r s3cur3"
 
+// create a Boxer with default scrypt settings
+bxr := boxer.NewDefaultBoxer()
+
 // encrypt
-ciphertext, err := boxer.Encrypt([]byte(dataToEncrypt), []byte(password))
+ciphertext, err := bxr.Encrypt([]byte(dataToEncrypt), []byte(password))
 if err != nil {
 	panic(err)
 }
 
 // and decrypt again
-plaintext, err := boxer.Decrypt(ciphertext, []byte(password))
+plaintext, err := bxr.Decrypt(ciphertext, []byte(password))
 if err != nil {
 	panic(err)
 }

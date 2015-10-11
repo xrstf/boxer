@@ -31,6 +31,12 @@ const NonceLength = 24
 // The length of the encryption key for the secretbox implementation.
 const KeyLength = 32
 
+// This structure contains the parameters used for running scrypt. As time passes,
+// they need to be adjusted to take newer CPU/GPU generations into account. Use
+// DefaultScryptParameters() to get a good set of parameters as of 2015. Note that
+// the Cost factor highly depends on your usecase: if you plan to do many crypto
+// runs in a short time, a high Cost factor can open you up to Denial-of-Service
+// attacks.
 type ScryptParameters struct {
 	// cost parameter
 	Cost int
@@ -42,18 +48,27 @@ type ScryptParameters struct {
 	P int
 }
 
+// Return a sane set of default values as of 2015.
 func DefaultScryptParameters() ScryptParameters {
 	return ScryptParameters{16384, 8, 1}
 }
 
+// A Boxer can open and seal boxes to encrypt/decrypt data.
+//
+// Boxes created by this type are only compatible to other Boxers with the
+// identical params struct. Also, use *either* password-based encryption
+// *or* key-based encryption, but don't mix the two, as their random salt
+// will make it basically impossible to get the keys right.
 type Boxer struct {
 	params ScryptParameters
 }
 
+// Create a new Boxer based on a given scrypt parameter set.
 func NewBoxer(params ScryptParameters) *Boxer {
 	return &Boxer{params}
 }
 
+// Create a new Boxer with the default scrypt parameters of this package.
 func NewDefaultBoxer() *Boxer {
 	return &Boxer{DefaultScryptParameters()}
 }
@@ -101,20 +116,23 @@ func (b *Boxer) Decrypt(ciphertext []byte, password []byte) ([]byte, error) {
 		return nil, errors.New(fmt.Sprintf("The ciphertext is too short (%d bytes) to be valid. It needs to be at least %d bytes.", len(ciphertext), minLength))
 	}
 
+	// figure out the salt to derive the key used for encryption
 	salt := new([SaltLength]byte)
-	nonce := new([NonceLength]byte)
-
-	// first comes the salt, then the nonce, then the box itself
 	copy(salt[:], ciphertext[:SaltLength])
-	copy(nonce[:], ciphertext[SaltLength:(SaltLength+NonceLength)])
 
 	key, err := b.DeriveKey(password, salt)
 	if err != nil {
 		return nil, err
 	}
 
+	// find the secretbox nonce (if follows the SaltLength bytes at the beginning of ciphertext)
+	nonce := new([NonceLength]byte)
+	copy(nonce[:], ciphertext[SaltLength:(SaltLength+NonceLength)])
+
+	// slice out the secretbox
 	box := ciphertext[(SaltLength + NonceLength):]
 
+	// ... and open it
 	plain, success := secretbox.Open(nil, box, nonce, key)
 	if !success {
 		return nil, errors.New("Decrypting failed, probably due to a wrong password.")
@@ -128,10 +146,9 @@ func (b *Boxer) Decrypt(ciphertext []byte, password []byte) ([]byte, error) {
 // secretbox requires a key with exactly 32 bytes. This function uses scrypt to
 // derive a key from a given password. Note that the result is randomized, as it
 // contains a random salt.
-// The first byte slice is the key, the second one is the generated salt. You need
+// The first byte array is the key, the second one is the generated salt. You need
 // to keep the salt (it does not need to be encrypted, consider it "public") and
 // use it again to re-create the same key from a password.
-// If you use Encrypt() and Decrypt(), all this is already taken care of.
 func (b *Boxer) DeriveKeyFromPassword(password []byte) (*[KeyLength]byte, *[SaltLength]byte, error) {
 	// create the salt for key derivation
 	salt := new([SaltLength]byte)
