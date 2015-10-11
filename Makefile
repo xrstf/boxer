@@ -4,8 +4,11 @@ build: fix
 	go build -v .
 
 test: fix
-	go test
+	go test -v
 
 fix: *.go
 	goimports -l -w .
 	gofmt -l -w .
+
+travis:
+	go test -v
