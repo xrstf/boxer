@@ -113,7 +113,7 @@ func (b *Boxer) Decrypt(ciphertext []byte, password []byte) ([]byte, error) {
 	minLength := SaltLength + NonceLength + secretbox.Overhead + 1
 
 	if len(ciphertext) < minLength {
-		return nil, errors.New(fmt.Sprintf("The ciphertext is too short (%d bytes) to be valid. It needs to be at least %d bytes.", len(ciphertext), minLength))
+		return nil, fmt.Errorf("The ciphertext is too short (%d bytes) to be valid. It needs to be at least %d bytes.", len(ciphertext), minLength)
 	}
 
 	// figure out the salt to derive the key used for encryption
